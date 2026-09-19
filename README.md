@@ -27,175 +27,32 @@ the robot. Physical movement must be explicitly enabled with `--execute`.
 [![Hackathon Catch demo](docs/demo-thumbnail.jpg)](VIDEO_URL)
 -->
 
-## System architecture
+## How it works
 
-The main entry point is `motion.catch_plane`. It connects to the local
-`viam-server`, reads both cameras concurrently, converts ball detections into
-world-space observations, fits a trajectory, and owns the only path that can
-command the arm.
+The system uses two cameras and a Viam-controlled robot arm to follow a thrown
+ball and move a bowl underneath it.
 
-```mermaid
-flowchart LR
-    subgraph Hardware
-        W[Wrist RGB-D camera<br/>cam]
-        S[Fixed side camera<br/>cam2]
-        A[Robot arm<br/>arm]
-        B[Bowl on gripper]
-    end
+1. The wrist camera and fixed side camera watch for the colored ball.
+2. The software combines the camera detections with the calibrated camera
+   positions to estimate where the ball is in the robot's world coordinates.
+3. Several observations are used to estimate the ball's direction, speed, and
+   curved flight path under gravity.
+4. The software predicts when and where the ball will descend through the
+   bowl's fixed catch height.
+5. Before moving, it checks that the prediction is stable, the target is inside
+   the arm's configured workspace, and the arm has enough time to reach it.
+6. In preview mode, it prints the predicted catch without moving. When started
+   with `--execute`, it moves the bowl to the predicted location and then
+   returns the arm to its default pose.
 
-    subgraph Viam[Local Viam machine]
-        VS[viam-server<br/>127.0.0.1:8080]
-        MS[Motion service<br/>builtin]
-        FS[Frame system<br/>world / arm / gripper / cameras]
-    end
+Keeping the bowl at one fixed height turns the catch into a short side-to-side
+and forward-to-back movement instead of a full 3D motion. This reduces planning
+time and gives the arm a better chance of reaching the target before the ball.
 
-    subgraph Perception
-        D[HSV ball detector<br/>green_ball]
-        WR[Wrist RGB-D localization<br/>ball_point]
-        SR[Side-camera localization<br/>SideTracker]
-        ST[Optional two-ray triangulation<br/>StereoTracker]
-    end
-
-    subgraph Prediction
-        BF[BallisticFit<br/>position + velocity + gravity]
-        PI[Fixed-plane intersection<br/>plane_intercept]
-        PG[PredictionGate<br/>spatial + arrival-time consensus]
-    end
-
-    subgraph Control
-        SAFE[Freshness, timing,<br/>workspace and reach checks]
-        MOVE[ServoMove or<br/>Viam Motion service]
-        HOME[Return to taught<br/>default pose]
-    end
-
-    W --> VS
-    S --> VS
-    A <--> VS
-    VS --> MS
-    VS --> FS
-    VS --> D
-    FS --> WR
-    FS --> SR
-    D --> WR
-    D --> SR
-    WR --> BF
-    SR --> BF
-    WR --> ST
-    SR --> ST
-    ST --> BF
-    BF --> PI
-    PI --> PG
-    PG --> SAFE
-    SAFE -->|--execute only| MOVE
-    MS --> MOVE
-    MOVE --> A
-    A --> B
-    MOVE --> HOME
-```
-
-### Runtime data flow
-
-1. **Connect and validate.** The launcher reads Viam's cached machine
-   configuration and connects to the local server. The controller resolves the
-   arm, cameras, Motion service, and configured frames. It refuses to start an
-   executing catch if another motion controller is active or the arm is already
-   moving.
-2. **Establish geometry.** The controller reads the parked flange, gripper, and
-   wrist-camera transforms from Viam's frame system. The bowl-mouth position is
-   the configured offset from the gripper frame. The catch plane is either a
-   configured world-Z height or the bowl's parked height.
-3. **Capture synchronized evidence.** The wrist loop reads RGB and, when
-   enabled, aligned depth. `SideTracker` runs independently so a missed wrist
-   detection does not erase a valid side-camera trajectory. Capture timestamps
-   are checked for age before any observation enters a fit.
-4. **Detect and localize the ball.** HSV segmentation finds ball-colored
-   contours. Area, projected radius, temporal proximity, range, and throw-volume
-   checks reject background objects. The wrist path can estimate distance from
-   depth or apparent ball size; the fixed side path uses its calibrated pose and
-   apparent size. Stereo mode intersects the two calibrated camera rays.
-5. **Fit the flight.** `BallisticFit` models free flight in a Z-up world as
-   `p(t) = p0 + v0*t + 0.5*g*t^2`, with gravity fixed at `-9810 mm/s²`. It fits
-   position and velocity from recent observations and rejects large gaps,
-   jumps, short time spans, and excessive residual error. A release-speed gate
-   prevents held-ball samples from contaminating the flight fit.
-6. **Predict the catch.** `plane_intercept` solves the quadratic for the
-   descending crossing of the fixed catch height. The predicted bowl point is
-   converted to a flange target using the measured bowl offset. Because height
-   and wrist orientation stay fixed, the commanded correction is only in XY.
-7. **Gate the prediction.** The target must be inside both the rectangular
-   catch box and radial reach envelope. The measured arm timing model estimates
-   whether the move can finish before the ball arrives. `PredictionGate`
-   requires several predictions to agree in position and arrival time before a
-   catch can be committed.
-8. **Preview or execute.** Without `--execute`, the exact same pipeline prints
-   `WOULD CATCH` and never sends a move. With `--execute`, the arm makes one
-   short intercept move. The loop can apply one useful late nudge if fresh
-   evidence still leaves enough time, then returns the robot to its taught
-   default pose and rearms for a later throw.
-
-### Why a fixed catch plane?
-
-A general 3D interception problem must choose a height, position, orientation,
-and time while the prediction is still changing. This project teaches the bowl
-orientation once and holds its height constant. Catching then becomes a
-two-axis translation plus one quadratic plane-crossing calculation. That makes
-the target cheaper to compute, keeps the move short, and lets the measured arm
-timing decide objectively whether a prediction is still actionable.
-
-### Control sequence
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Controller as catch_plane.py
-    participant Viam as viam-server
-    participant Cameras as cam + cam2
-    participant Predictor as fit + intercept gate
-    participant Arm
-
-    User->>Controller: Start preview or --execute
-    Controller->>Viam: Resolve resources and frame poses
-    Controller->>Arm: Confirm parked and stationary
-    Controller->>Cameras: Start wrist and side streams
-    loop Every fresh frame
-        Cameras-->>Controller: RGB/depth + capture time
-        Controller->>Predictor: Validated world-space observation
-        Predictor-->>Controller: Flight and plane crossing, or rejection reason
-    end
-    alt Preview mode
-        Controller-->>User: WOULD CATCH + target/timing
-    else Execute mode and stable target
-        Controller->>Arm: Move bowl in catch plane
-        Arm-->>Controller: Move complete
-        Controller->>Arm: Optional late correction
-        Controller->>Arm: Return to default pose
-    end
-```
-
-### Coordinate frames and units
-
-- All catch geometry uses millimetres and seconds.
-- World Z points upward; gravity acts along negative Z.
-- Camera pixels become camera rays through each camera's intrinsic parameters.
-- Camera-to-world transforms come from Viam's frame system for the wrist camera
-  and the validated PnP calibration for `cam2`.
-- The bowl-mouth target is converted to a flange pose using
-  `bowl_offset_gripper_mm`; reachability is checked on the flange target, not
-  just on the ball position.
-- Image capture time, rather than RPC completion time, is used for trajectory
-  observations. Stale frames are rejected.
-
-### Operating modes
-
-| Mode | Command option | Behavior |
-| --- | --- | --- |
-| Preview | default | Runs perception and prediction; never commands motion |
-| Fixed-plane catch | `--execute` | Commits a stable, reachable prediction and returns home |
-| Wrist trajectory | `--trajectory-source wrist` | Uses wrist RGB-D/size localization for the flight fit |
-| Side trajectory | `--trajectory-source side` | Uses the fixed calibrated camera; this is the default |
-| Stereo trajectory | `--trajectory-source stereo` | Triangulates matching wrist and side-camera bearings |
-| Planned movement | `--planned` | Sends the intercept through Viam Motion instead of direct short servo motion |
-| Rough experiment | `--rough` | Loosens stability behavior for bounded continuous experiments; wrist source only |
+The primary workflow is implemented in `motion/catch_plane.py`. Supporting
+modules handle ball detection, side-camera calibration, trajectory fitting,
+prediction checks, arm timing, and returning the robot safely to its starting
+pose. The default run is read-only; physical movement requires `--execute`.
 
 ## Hardware and services
 
@@ -294,26 +151,6 @@ model used by the interception gate.
 The Python process runs on the same machine as `viam-server`. This avoids a
 cloud round trip in the frame loop while still using Viam resources and the
 machine's configured frame system.
-
-```mermaid
-flowchart TB
-    DEV[Developer computer<br/>Git + Viam CLI]
-    GH[GitHub<br/>hackathon_catch]
-    subgraph ROBOT[Robot computer]
-        REPO[/opt/viam/trajectory-local]
-        VENV[/opt/viam/trajectory-local-venv]
-        CFG[/root/.viam/cached_cloud_config_*.json]
-        RUN[catch-plane.sh]
-        SERVER[viam-server<br/>localhost:8080]
-    end
-
-    DEV <--> GH
-    GH -->|git pull| REPO
-    REPO --> RUN
-    VENV --> RUN
-    CFG --> RUN
-    RUN --> SERVER
-```
 
 `catch-plane.sh` locates the cached machine configuration, selects the project
 virtual environment, and starts `python -m motion.catch_plane`. Secrets remain

@@ -1,0 +1,42 @@
+{
+  "camera": "cam",
+  "arm": "arm",
+  "gripper": "gripper",
+  "motion": "builtin",
+  "world_frame": "world",
+  "object_type": "can",
+  "can_diameter_mm": 65,
+  "can_length_mm": 125,
+  "can_on_side": true,
+  "ball_radius_mm": 32.5,
+  "workspace_mm": [
+    [
+      -50,
+      -750,
+      175
+    ],
+    [
+      600,
+      100,
+      550
+    ]
+  ],
+  "contact_flange_z_mm": 175,
+  "grasp_theta_deg": 31.215150611039384,
+  "max_step_mm": 60,
+  "max_rotation_step_deg": 8,
+  "capture_xy_mm": 20,
+  "lost_timeout_s": 0.2,
+  "rpc_timeout_s": 3,
+  "start_pose_mm": {
+    "x": 238.07014127025724,
+    "y": -52.91652785200591,
+    "z": 223.1463208934436,
+    "o_x": 0.02306425141391394,
+    "o_y": -0.9537198106610272,
+    "o_z": -0.2998108788209838,
+    "theta": -178.81110311955516
+  },
+  "start_tolerance_mm": 10,
+  "start_tolerance_deg": 5
+}

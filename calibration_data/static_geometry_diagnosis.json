@@ -1,0 +1,39 @@
+{
+  "status": "preview_only",
+  "production_calibration_modified": false,
+  "height_shift_mm": -70.72465471174861,
+  "height_shift_fit_dataset": "static_pair.json",
+  "results": [
+    {
+      "dataset": "static_pair.json",
+      "original_gap_mm_median": 70.66583284186936,
+      "fixed_height_gap_mm_median": 0.27608339521252545,
+      "mean_constraint_normal": [
+        -0.037433602930606644,
+        -0.016102450940282786,
+        -0.9991692444069384
+      ]
+    },
+    {
+      "dataset": "static_pair_high.json",
+      "original_gap_mm_median": 63.43013936606161,
+      "fixed_height_gap_mm_median": 5.186344095008879,
+      "mean_constraint_normal": [
+        -0.2184523360900577,
+        0.10109227521512407,
+        -0.9705958027316385
+      ]
+    },
+    {
+      "dataset": "static_pair_near.json",
+      "original_gap_mm_median": 46.72927846256787,
+      "fixed_height_gap_mm_median": 21.30693875738146,
+      "mean_constraint_normal": [
+        -0.25130895868658837,
+        0.10666603757849022,
+        -0.9620112213799427
+      ]
+    }
+  ],
+  "conclusion": "A fixed vertical translation does not align all distances. Three narrow position clusters do not establish a general relative camera pose; collect spatially distributed correspondences and reserve independent validation points before execution."
+}

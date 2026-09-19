@@ -1,0 +1,45 @@
+{
+  "camera": "cam",
+  "arm": "arm",
+  "motion": "builtin",
+  "world_frame": "world",
+  "ball_radius_mm": 30,
+  "can_diameter_mm": 65,
+  "min_width_px": 10,
+  "min_radius_px": 8,
+  "dominance_ratio": 1.25,
+  "standoff_mm": 350,
+  "standoff_deadband_mm": 60,
+  "lateral_gain": 0.5,
+  "forward_gain": 0.0,
+  "max_step_mm": 200,
+  "min_step_mm": 15,
+  "min_distance_mm": 150,
+  "max_distance_mm": 2000,
+  "workspace_mm": [
+    [
+      -700,
+      -700,
+      150
+    ],
+    [
+      640,
+      700,
+      700
+    ]
+  ],
+  "lost_timeout_s": 0.8,
+  "rpc_timeout_s": 3,
+  "min_reach_mm": 200,
+  "max_reach_mm": 760,
+  "detector": "blob",
+  "min_saturation": 90,
+  "min_value": 40,
+  "hue_low_max": 12,
+  "hue_high_min": 168,
+  "min_area_px": 150,
+  "distance_smoothing": 0.25,
+  "preempt_mm": 0,
+  "move_timeout_s": 5,
+  "track_gate_px": 140
+}

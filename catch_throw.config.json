@@ -1,0 +1,59 @@
+{
+  "camera": "cam",
+  "arm": "arm",
+  "gripper": "gripper",
+  "motion": "builtin",
+  "world_frame": "world",
+  "detector": "blob",
+  "ball_radius_mm": 30,
+  "can_diameter_mm": 65,
+  "min_radius_px": 6,
+  "min_width_px": 10,
+  "min_area_px": 100,
+  "min_saturation": 110,
+  "min_value": 40,
+  "hue_low_max": 12,
+  "hue_high_min": 168,
+  "dominance_ratio": 1.15,
+  "track_gate_px": 220,
+  "min_distance_mm": 200,
+  "max_distance_mm": 4000,
+  "catch_box_mm": [
+    [
+      -400,
+      -800,
+      150
+    ],
+    [
+      900,
+      800,
+      1000
+    ]
+  ],
+  "min_reach_mm": 200,
+  "max_reach_mm": 1000,
+  "catch_orientation": [
+    0,
+    0,
+    -1,
+    31.215150611039384
+  ],
+  "timing_measured": true,
+  "arm_latency_s": 0.159,
+  "arm_speed_mm_s": 435,
+  "max_prediction_s": 1.5,
+  "search_step_s": 0.01,
+  "close_lead_s": 0.12,
+  "arrival_margin_s": 0.08,
+  "close_slip_s": 0.05,
+  "arrival_tolerance_mm": 60,
+  "min_samples": 5,
+  "max_gap_s": 0.15,
+  "max_residual_mm": 30,
+  "max_frame_age_s": 0.12,
+  "rpc_timeout_s": 3,
+  "catcher": "bowl",
+  "tool_offset_mm": 200,
+  "bowl_radius_mm": 90,
+  "bowl_upright": 0.5
+}

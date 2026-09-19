@@ -1,0 +1,23 @@
+{
+  "method": "equal-position-weight least squares, world Z translation only; rotation unchanged",
+  "offset_world_mm": [
+    0,
+    0,
+    -61.81262820967968
+  ],
+  "independently_validated": false,
+  "datasets": [
+    {
+      "file": "static_pair.json",
+      "median_gap_mm": 8.904617119001255
+    },
+    {
+      "file": "static_pair_high.json",
+      "median_gap_mm": 3.460031367355196
+    },
+    {
+      "file": "static_pair_near.json",
+      "median_gap_mm": 12.733682748766643
+    }
+  ]
+}

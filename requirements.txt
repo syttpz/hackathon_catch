@@ -1,0 +1,4 @@
+python-dotenv==1.2.3
+viam-sdk==0.80.0
+numpy>=1.26,<3
+opencv-python-headless>=4.10,<5

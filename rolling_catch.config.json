@@ -1,0 +1,46 @@
+{
+  "camera": "cam",
+  "arm": "arm",
+  "world_frame": "world",
+  "ball_radius_mm": 32.5,
+  "catch_line_end_effector_mm": [
+    [
+      -6.768381920597495,
+      -207.21842304125852,
+      175
+    ],
+    [
+      550.9375204425073,
+      -114.91881184772255,
+      175
+    ]
+  ],
+  "candidate_orientation": [
+    0,
+    0,
+    -1,
+    31.215150611039384
+  ],
+  "max_prediction_s": 5,
+  "gripper": "gripper",
+  "motion": "builtin",
+  "move_budget_s": 1.5,
+  "open_budget_s": 1.5,
+  "close_lead_s": 0.15,
+  "arrival_margin_s": 0.15,
+  "arrival_tolerance_mm": 5,
+  "rpc_timeout_s": 3,
+  "tracking_pose_reference_mm": {
+    "x": 238.07014127025724,
+    "y": -52.91652785200591,
+    "z": 223.1463208934436,
+    "o_x": 0.02306425141391394,
+    "o_y": -0.9537198106610272,
+    "o_z": -0.2998108788209838,
+    "theta": -178.81110311955516
+  },
+  "object_type": "can",
+  "can_diameter_mm": 65,
+  "can_length_mm": 125,
+  "can_on_side": true
+}

@@ -31,9 +31,9 @@ from viam.services.motion import MotionClient
 from viam.robot.client import RobotClient
 from viam.proto.common import Pose, PoseInFrame
 
-from motion.trajectory_local import credentials, positive
+from motion.viam_runtime import credentials, positive
 from motion.live_camera_pose import pose_matrix, matrix_pose
-from motion.track_red import clamp_target, in_workspace, DirectArmMove
+from motion.arm_workspace import clamp_target, in_workspace, DirectArmMove
 
 
 async def read_flange(motion, config, name='arm'):
@@ -141,7 +141,7 @@ async def run(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--config', type=Path, default=Path(__file__).parents[1]/'track_red.config.json')
+    parser.add_argument('--config', type=Path, default=Path(__file__).parents[1]/'catch_plane.config.json')
     parser.add_argument('--machine-config', type=Path)
     parser.add_argument('--execute', action='store_true', help='Actually move the arm')
     parser.add_argument('--planned', action='store_true',

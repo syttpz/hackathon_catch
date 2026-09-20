@@ -1,0 +1,8 @@
+{
+  "ball_radius_mm": 30,
+  "min_saturation": 90,
+  "min_value": 40,
+  "hue_low_max": 12,
+  "hue_high_min": 168,
+  "min_area_px": 150
+}

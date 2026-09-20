@@ -9,7 +9,7 @@ import json
 
 from viam.services.vision import VisionClient
 
-from connection import connect
+from motion.viam_connection import connect
 
 
 async def get_box_midpoints(machine, detector="color_detect", camera="cam"):

@@ -107,8 +107,7 @@ Useful alternatives:
 # Use the wrist camera instead of the side camera as the trajectory source
 ./catch-plane.sh --trajectory-source wrist
 
-# Run the separate catch-and-grip workflow in preview mode
-./catch-throw.sh
+# Archived catch-and-grip and rolling-object workflows live under old_files/
 ```
 
 ## Configuration and calibration
@@ -179,10 +178,12 @@ tools and earlier experiments that led to it.
 | `motion/catch_side.py` | Independent `cam2` loop and side-calibration trust checks |
 | `motion/ballistic.py` | Free-flight fit, fixed-plane crossing, timing, and reachability |
 | `motion/stereo_tracking.py` | Capture-time pairing and triangulation of two camera rays |
-| `motion/rolling_catch.py` | Prediction consensus and one-shot catch safety helpers |
+| `motion/prediction_gate.py` | Multi-frame prediction consensus |
 | `motion/rough_cycle.py` | Per-throw rearming and optional rough-mode evidence handoff |
 | `motion/live_camera_pose.py` | Viam pose conversion and capture-time pose interpolation |
-| `motion/trajectory_local.py` | Local credentials, image decoding, and camera utilities |
+| `motion/camera_geometry.py` | Camera-to-world transform sampling |
+| `motion/viam_runtime.py` | Local credentials, image decoding, and CLI validation |
+| `motion/arm_workspace.py` | Shared workspace and direct-move helpers |
 
 ### Calibration and diagnostics
 
@@ -193,37 +194,35 @@ tools and earlier experiments that led to it.
 | `motion/calibrate_bowl.py` | Estimates the bowl-mouth offset from the gripper frame |
 | `motion/handeye.py` | Eye-to-hand rigid-transform math and degeneracy checks |
 | `motion/measure_timing.py` | Measures arm move latency, speed, and acceleration |
-| `motion/red_probe.py` | Read-only live color-threshold diagnostic |
-| `vision/live_ball.py` | Read-only RGB/depth visualization and annotation |
-| `vision/viam_pipeline.py` | Lists and probes configured Viam vision resources |
+| `calibrate_cam2.config.json` | Red-ball silhouette settings used only during cam2 calibration |
+| `vision/viam_pipeline.py` | Read-only Viam resource and vision-service diagnostic |
 | `calibration_data/` | Captured samples and fitted geometry retained for reproducibility |
 | `cam2_catch_calibration.json` | Active fixed-side-camera calibration and quality metadata |
 
-### Supporting workflows and experiments
+### Archived workflows and experiments
 
 | Path | Responsibility |
 | --- | --- |
-| `motion/catch_throw.py` | Alternative trajectory catch that can coordinate the gripper |
-| `motion/rolling_preview.py` | Rolling-object/table-plane interception workflow |
-| `motion/track_red.py` | Wrist-camera visual servoing toward a red target |
-| `motion/viam_ball_catch.py` | Earlier Viam Vision-service ball-catching approach |
-| `motion/viam_stationary_grab.py` | Stationary ball localization and pickup workflow |
-| `motion/can_tracking.py`, `can_follower.py` | Red-can detection and following experiments |
-| `motion/table_plane.py`, `rolling_intercept.py` | Table fitting and 2D rolling intercept geometry |
-| `ball_tracking.py` | Reusable RGB/depth observation and simple trajectory primitives |
-| `vision/viam_ball.py` | Read-only Viam detector/segmenter localization helpers |
+| `old_files/rolling/` | Rolling-ball/table-plane interception and red-can following |
+| `old_files/red_ball/` | Earlier red-ball tracking, catching, pickup, and Viam Vision workflows |
+| `old_files/tests/` | Tests retained with the archived workflows |
 
-These supporting workflows are not imported wholesale by the primary catcher;
-they remain useful as diagnostics, calibration references, and documented
-iterations of the system.
+The primary catcher does not import archived workflow modules. Shared behavior
+that is still required by the current catcher or calibration tools lives in the
+focused modules under `motion/`.
 
 ### Tests
 
-The `tests/` directory mirrors the architecture. It covers detection,
-ballistics, plane intersections, camera calibration, stereo geometry,
-prediction stability, default-pose return, visual following, stationary pickup,
-and mocked end-to-end control flow. Hardware calls are mocked so the suite can
-run without moving a robot.
+The `tests/` directory covers the active catcher, calibration, stereo geometry,
+prediction stability, and default-pose return. Archived workflow tests are in
+`old_files/tests/`. Hardware calls are mocked so the suites can run without
+moving a robot.
+
+Run archived tests separately when changing archived code:
+
+```bash
+python -m unittest discover -s old_files/tests -v
+```
 
 ## Safety
 

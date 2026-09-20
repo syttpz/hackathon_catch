@@ -30,11 +30,11 @@ from viam.services.motion import MotionClient
 from viam.robot.client import RobotClient
 from viam.proto.common import Pose, PoseInFrame
 
-from motion.trajectory_local import credentials, decode_color, positive
+from motion.viam_runtime import credentials, decode_color, positive
 from motion.live_camera_pose import pose_matrix, matrix_pose
-from motion.rolling_preview import camera_transform
+from motion.camera_geometry import camera_transform
 from motion.ballistic import BallisticFit, ArmTiming, plane_intercept, reachable
-from motion.rolling_catch import PredictionGate
+from motion.prediction_gate import PredictionGate
 from motion.catch_side import prepare_side
 from motion.rough_cycle import RoughCycle, RoughHandoff, approaching_bowl
 from motion.stereo_tracking import StereoTracker
@@ -251,7 +251,11 @@ async def run(args):
                 command = (proc/'cmdline').read_bytes().split(b'\0')
             except OSError:
                 continue
-            controllers = (b'motion.capture_can', b'motion.catch_plane', b'motion.catch_throw')
+            controllers = (
+                b'old_files.rolling.capture_can',
+                b'motion.catch_plane',
+                b'old_files.red_ball.catch_throw',
+            )
             if b'--execute' in command and any(name in command for name in controllers):
                 raise ValueError(f'Another motion controller is executing (PID {proc.name}); '
                                  'stop it before starting a catch controller')

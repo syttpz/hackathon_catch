@@ -1,1 +1,1 @@
-"""Live Viam camera inspection tools."""
+"""Active Viam vision diagnostics."""

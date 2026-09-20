@@ -22,9 +22,9 @@ from viam.components.camera import Camera
 from viam.services.motion import MotionClient
 from viam.robot.client import RobotClient
 
-from motion.trajectory_local import credentials, decode_color, positive
+from motion.viam_runtime import credentials, decode_color, positive
 from motion.live_camera_pose import pose_matrix
-from motion.rolling_preview import camera_transform
+from motion.camera_geometry import camera_transform
 from motion.catch_plane import green_ball, ball_point
 
 

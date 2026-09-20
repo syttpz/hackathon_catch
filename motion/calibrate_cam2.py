@@ -31,7 +31,7 @@ from viam.components.camera import Camera
 from viam.services.motion import MotionClient
 from viam.robot.client import RobotClient
 
-from motion.trajectory_local import credentials, decode_color, positive
+from motion.viam_runtime import credentials, decode_color, positive
 from motion.live_camera_pose import pose_matrix
 from motion.handeye import solve_eye_to_hand, orientation_spread_deg, viam_frame
 
@@ -257,7 +257,7 @@ def main():
     subparsers = parser.add_subparsers(dest='command', required=True)
 
     grab = subparsers.add_parser('capture', help='Record one sample per Enter press')
-    grab.add_argument('--config', type=Path, default=Path(__file__).parents[1]/'track_red.config.json')
+    grab.add_argument('--config', type=Path, default=Path(__file__).parents[1]/'calibrate_cam2.config.json')
     grab.add_argument('--machine-config', type=Path)
     grab.add_argument('--camera', default='cam2')
     grab.add_argument('--gripper', default='gripper')

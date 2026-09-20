@@ -10,7 +10,7 @@ import numpy as np
 import cv2
 
 from motion.ballistic import BallisticFit
-from motion.trajectory_local import decode_color
+from motion.viam_runtime import decode_color
 
 
 def solve_side_pose(world, pixels, intrinsics):

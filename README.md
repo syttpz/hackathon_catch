@@ -1,233 +1,86 @@
 # Hackathon Catch
 
-Hackathon Catch is a vision-guided robotic ball-catching system built with a
-Viam-controlled arm, a wrist camera, and a fixed side camera. It detects a
-lobbed ball, estimates its 3D trajectory, predicts where it will cross a fixed
-catch plane, and moves a bowl into position for the catch.
+### 3rd Place - Viam Hackathon
 
-This project was created for the **Viam Hackathon** and is a branched,
-catch-focused version of
-[`gracexu24/viamhackathon26`](https://github.com/gracexu24/viamhackathon26).
-This repository isolates the complete catching workflow, its calibration data,
-launch scripts, and hardware-independent tests.
+We built a robot arm that can watch a ball being thrown, predict where it will
+land, and move a bowl into place to catch it.
 
-The controller is safe by default: normal runs are preview-only and do not move
-the robot. Physical movement must be explicitly enabled with `--execute`.
+This project is a catch-focused branch of
+[`viamhackathon26`](https://github.com/gracexu24/viamhackathon26), created for
+the Viam Hackathon.
 
-## Demo
+![The robot arm catching a ball](assets/catch-demo.gif)
 
-<!-- Replace VIDEO_URL with the final YouTube, Vimeo, or Google Drive URL. -->
+## The idea
 
-> **Video demo coming soon**
->
-> The final demo will show camera tracking, trajectory prediction, the planned
-> intercept, and the arm completing a catch.
+Catching a ball sounds simple, but the robot has very little time to see the
+throw, understand its path, and move to the right place. Instead of making the
+arm chase the ball through the air, we keep the bowl at one fixed height and
+predict where the ball will cross that height on its way down.
 
-<!-- Optional thumbnail once the video is ready:
-[![Hackathon Catch demo](docs/demo-thumbnail.jpg)](VIDEO_URL)
--->
+That turns a complicated 3D movement into a much faster two-direction move. The
+arm only needs to slide the bowl forward, backward, left, or right while keeping
+the same height and orientation.
 
-## How it works
+## How we got the arm to catch the ball
 
-The system uses two cameras and a Viam-controlled robot arm to follow a thrown
-ball and move a bowl underneath it.
+We used two cameras connected through Viam:
 
-1. The wrist camera and fixed side camera watch for the colored ball.
-2. The software combines the camera detections with the calibrated camera
-   positions to estimate where the ball is in the robot's world coordinates.
-3. Several observations are used to estimate the ball's direction, speed, and
-   curved flight path under gravity.
-4. The software predicts when and where the ball will descend through the
-   bowl's fixed catch height.
-5. Before moving, it checks that the prediction is stable, the target is inside
-   the arm's configured workspace, and the arm has enough time to reach it.
-6. In preview mode, it prints the predicted catch without moving. When started
-   with `--execute`, it moves the bowl to the predicted location and then
-   returns the arm to its default pose.
+- A fixed side camera watches the full throw and helps estimate when the ball
+  will reach the catching height.
+- A camera near the arm helps locate the ball and bowl in the robot's space.
 
-Keeping the bowl at one fixed height turns the catch into a short side-to-side
-and forward-to-back movement instead of a full 3D motion. This reduces planning
-time and gives the arm a better chance of reaching the target before the ball.
+The software looks for the bright ball in each camera frame and follows its
+position over time. Those observations are converted into real-world positions
+using our camera calibration. We then fit a simple flight path that includes
+gravity, giving us an estimate of where the ball is going rather than only
+where it is now.
 
-The primary workflow is implemented in `motion/catch_plane.py`. Supporting
-modules handle ball detection, side-camera calibration, trajectory fitting,
-prediction checks, arm timing, and returning the robot safely to its starting
-pose. The default run is read-only; physical movement requires `--execute`.
+Once the ball is moving downward, the program calculates where its path crosses
+the height of the bowl. It waits until several predictions agree, checks that
+the point is within the arm's safe reach, and makes sure there is still enough
+time for the arm to move. If all of those checks pass, the bowl moves to the
+predicted point for the catch.
 
-## Hardware and services
+After the attempt, the arm returns to its starting pose and gets ready for the
+next throw.
 
-- Viam-compatible robot arm (`arm`)
-- Bowl or basket mounted to the end effector
-- Wrist RGB-D camera (`cam`)
-- Fixed side camera (`cam2`)
-- Viam Motion service (`builtin`)
-- Python 3.10 or newer
+## What made it work
 
-Resource names and physical limits are configured in
-[`catch_plane.config.json`](catch_plane.config.json).
+- **Two camera views:** one view gives us the shape and timing of the throw,
+  while the other connects it to the robot and bowl.
+- **Camera calibration:** both camera views are mapped into the same coordinate
+  system as the arm.
+- **Trajectory prediction:** recent ball positions are used to estimate a
+  curved path under gravity.
+- **A fixed catch plane:** the arm makes a short, quick movement instead of
+  trying to follow the ball in full 3D.
+- **Real timing measurements:** the prediction is only used when the arm can
+  physically reach the target before the ball arrives.
+- **Safety checks:** unstable, stale, late, or unreachable predictions are
+  rejected instead of being sent to the robot.
 
-## Quick start
+## Built with
 
-Install the Python dependencies:
+- Viam for connecting the cameras, arm, motion service, and coordinate frames
+- Python for the tracking and control loop
+- OpenCV for finding the ball in each camera image
+- NumPy for calibration, trajectory fitting, and interception math
+- A UFACTORY UF850 arm with a bowl mounted at the end effector
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-```
+## Main parts of the repository
 
-On the robot, the supplied launch script expects this repository at
-`/opt/viam/trajectory-local` and uses the cached Viam machine configuration.
+- `motion/catch_plane.py` runs the complete catching workflow.
+- `motion/ballistic.py` estimates the ball's flight and catch point.
+- `motion/catch_side.py` handles the fixed side camera.
+- `motion/stereo_tracking.py` combines observations from both cameras.
+- `catch_plane.config.json` stores the camera, timing, workspace, and safety
+  settings for the physical setup.
+- `calibration_data/` contains the measurements used to align the cameras and
+  robot.
+- `tests/` checks the tracking, calibration, prediction, and control logic
+  without moving real hardware.
 
-Start with a preview run. It tracks and predicts but does not move the arm:
-
-```bash
-cd /opt/viam/trajectory-local
-./catch-plane.sh
-```
-
-After checking the camera feeds, calibration, workspace limits, default pose,
-and emergency stop, enable the complete catch workflow:
-
-```bash
-cd /opt/viam/trajectory-local
-./catch-plane.sh --execute
-```
-
-The process homes the arm, prints `READY`, waits for a valid throw, performs the
-catch attempt, and returns to the default pose. Stop it at any time with
-`Ctrl+C`.
-
-Useful alternatives:
-
-```bash
-# Run for 30 seconds in preview mode
-./catch-plane.sh --duration 30
-
-# Use the wrist camera instead of the side camera as the trajectory source
-./catch-plane.sh --trajectory-source wrist
-
-# Archived catch-and-grip and rolling-object workflows live under old_files/
-```
-
-## Configuration and calibration
-
-The main runtime settings are in `catch_plane.config.json`. They are grouped by
-the stage that consumes them:
-
-| Area | Important settings | Used for |
-| --- | --- | --- |
-| Viam resources | `camera`, `arm`, `gripper`, `motion`, `world_frame` | Resolving hardware and coordinate frames |
-| Ball detector | `hue_min/max`, `sat_min`, `val_min`, `min_area_px`, `min_radius_px` | Separating the ball from the image background |
-| 3D localization | `ball_radius_mm`, `range_source`, `min/max_distance_mm` | Converting a pixel/radius or aligned depth into range |
-| Flight fit | `min_samples`, `max_samples`, `max_gap_s`, `min_span_s`, `max_residual_mm` | Deciding when a trajectory is trustworthy |
-| Catch geometry | `catch_plane_z_mm`, `bowl_offset_gripper_mm`, `bowl_axis_flange` | Mapping the ball crossing to the required flange pose |
-| Workspace | `throw_volume_mm`, `catch_box_mm`, `min/max_reach_mm` | Rejecting impossible or unsafe observations and targets |
-| Timing | `arm_latency_s`, `arm_speed_mm_s`, `arm_acceleration_mm_s2`, `arrival_margin_s` | Determining whether the arm can arrive in time |
-| Stability | `stability_mm`, `stability_arrival_s`, `stability_samples`, `stability_span_s` | Requiring agreement across predictions before commit |
-| Side camera | `side_calibration`, side HSV thresholds | Loading and validating the fixed-camera model |
-
-Calibration helpers are included for the bowl and side camera:
-
-```bash
-./calibrate-bowl.sh
-./calibrate-cam2.sh
-./calibrate-cam2-pnp.sh
-./measure-timing.sh
-```
-
-Calibration values are specific to the physical setup. Do not copy bounds,
-offsets, or poses to another robot without measuring and validating them.
-
-The side-camera calibration file records camera intrinsics, its world pose, and
-quality information. Execution using the side or stereo source is blocked when
-that calibration does not pass its quality checks. `measure-timing.sh` performs
-real arm moves only when explicitly executed and fits the latency/acceleration
-model used by the interception gate.
-
-## Deployment model
-
-The Python process runs on the same machine as `viam-server`. This avoids a
-cloud round trip in the frame loop while still using Viam resources and the
-machine's configured frame system.
-
-`catch-plane.sh` locates the cached machine configuration, selects the project
-virtual environment, and starts `python -m motion.catch_plane`. Secrets remain
-in Viam's cached configuration and are not stored in this repository.
-
-## Tests
-
-Run the headless test suite from the repository root:
-
-```bash
-python -m unittest discover -s tests -v
-```
-
-## Repository layout
-
-The repository includes the current fixed-plane catcher as well as calibration
-tools and earlier experiments that led to it.
-
-### Primary catch path
-
-| Path | Responsibility |
-| --- | --- |
-| `catch-plane.sh` | Robot-side launcher for the primary workflow |
-| `catch_plane.config.json` | Physical setup, detector, fit, timing, and safety parameters |
-| `motion/catch_plane.py` | Runtime orchestration, wrist localization, gating, movement, and homing |
-| `motion/catch_side.py` | Independent `cam2` loop and side-calibration trust checks |
-| `motion/ballistic.py` | Free-flight fit, fixed-plane crossing, timing, and reachability |
-| `motion/stereo_tracking.py` | Capture-time pairing and triangulation of two camera rays |
-| `motion/prediction_gate.py` | Multi-frame prediction consensus |
-| `motion/rough_cycle.py` | Per-throw rearming and optional rough-mode evidence handoff |
-| `motion/live_camera_pose.py` | Viam pose conversion and capture-time pose interpolation |
-| `motion/camera_geometry.py` | Camera-to-world transform sampling |
-| `motion/viam_runtime.py` | Local credentials, image decoding, and CLI validation |
-| `motion/arm_workspace.py` | Shared workspace and direct-move helpers |
-
-### Calibration and diagnostics
-
-| Path | Responsibility |
-| --- | --- |
-| `motion/calibrate_cam2_pnp.py` | Solves the fixed camera pose from pixel/world correspondences |
-| `motion/calibrate_cam2.py` | Captures and solves ball-based side-camera calibration samples |
-| `motion/calibrate_bowl.py` | Estimates the bowl-mouth offset from the gripper frame |
-| `motion/handeye.py` | Eye-to-hand rigid-transform math and degeneracy checks |
-| `motion/measure_timing.py` | Measures arm move latency, speed, and acceleration |
-| `calibrate_cam2.config.json` | Red-ball silhouette settings used only during cam2 calibration |
-| `vision/viam_pipeline.py` | Read-only Viam resource and vision-service diagnostic |
-| `calibration_data/` | Captured samples and fitted geometry retained for reproducibility |
-| `cam2_catch_calibration.json` | Active fixed-side-camera calibration and quality metadata |
-
-### Archived workflows and experiments
-
-| Path | Responsibility |
-| --- | --- |
-| `old_files/rolling/` | Rolling-ball/table-plane interception and red-can following |
-| `old_files/red_ball/` | Earlier red-ball tracking, catching, pickup, and Viam Vision workflows |
-| `old_files/tests/` | Tests retained with the archived workflows |
-
-The primary catcher does not import archived workflow modules. Shared behavior
-that is still required by the current catcher or calibration tools lives in the
-focused modules under `motion/`.
-
-### Tests
-
-The `tests/` directory covers the active catcher, calibration, stereo geometry,
-prediction stability, and default-pose return. Archived workflow tests are in
-`old_files/tests/`. Hardware calls are mocked so the suites can run without
-moving a robot.
-
-Run archived tests separately when changing archived code:
-
-```bash
-python -m unittest discover -s old_files/tests -v
-```
-
-## Safety
-
-Keep the robot workspace clear and maintain access to the emergency stop. Run
-preview mode first, supervise every execution, and confirm that only one process
-has control of the arm. The software checks timing, prediction quality, and
-configured workspace limits, but those checks do not replace physical safety
-validation.
+The catch program starts in preview mode, so it can track and predict without
+moving the arm. Robot movement only happens when execution is explicitly
+enabled.

@@ -16,16 +16,16 @@ the robot. Physical movement must be explicitly enabled with `--execute`.
 
 ## Demo
 
-<!-- Replace VIDEO_URL with the final YouTube, Vimeo, or Google Drive URL. -->
+Short clips from the working robot:
 
-> **Video demo coming soon**
->
-> The final demo will show camera tracking, trajectory prediction, the planned
-> intercept, and the arm completing a catch.
+- [Watch catch demo 1](docs/media/demo-catch-1.mp4)
+- [Watch catch demo 2](docs/media/demo-catch-2.mp4)
+- [Watch catch demo 3](docs/media/demo-catch-3.mp4)
 
-<!-- Optional thumbnail once the video is ready:
-[![Hackathon Catch demo](docs/demo-thumbnail.jpg)](VIDEO_URL)
--->
+<p align="center">
+  <img src="docs/media/robot-arm.png" alt="Viam robot arm used for the ball-catching project" width="48%">
+  <img src="docs/media/team.png" alt="Hackathon Catch team with awards" width="48%">
+</p>
 
 ## How it works
 
@@ -53,6 +53,24 @@ The primary workflow is implemented in `motion/catch_plane.py`. Supporting
 modules handle ball detection, side-camera calibration, trajectory fitting,
 prediction checks, arm timing, and returning the robot safely to its starting
 pose. The default run is read-only; physical movement requires `--execute`.
+
+## Key design decisions
+
+- **Use a bright-colored ball.** A high-contrast ball made HSV color
+  segmentation faster and more reliable against the room background.
+- **Increase RealSense frame rate.** We modified the Viam SDK integration used
+  in our deployment so the RealSense camera FPS could be configured. More
+  frequent observations gave the trajectory fitter useful data during a short
+  throw.
+- **Track from RGB instead of depth.** RGB frames arrived with lower latency and
+  produced more consistent ball detections. The active configuration estimates
+  range from the ball's apparent size rather than waiting for depth data.
+- **Add an external camera.** A fixed side camera keeps observing the flight
+  while the wrist camera and arm move, and provides a stable calibrated view for
+  trajectory estimation.
+- **Constrain the catch to a plane.** Holding the bowl at a fixed height reduces
+  interception from a full 3D search to predicting one descending plane
+  crossing. The arm then needs only a short planar correction.
 
 ## Hardware and services
 
